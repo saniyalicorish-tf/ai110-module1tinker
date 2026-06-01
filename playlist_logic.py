@@ -71,9 +71,9 @@ def classify_song(song: Song, profile: Dict[str, object]) -> str:
     chill_keywords = ["lofi", "ambient", "sleep"]
 
     is_hype_keyword = any(k in genre for k in hype_keywords)
-    is_chill_keyword = any(k in title for k in chill_keywords)
+    is_chill_keyword = any(k in genre for k in chill_keywords)
 
-    if energy >= hype_min_energy and (genre == favorite_genre or is_hype_keyword):
+    if energy >= hype_min_energy or is_hype_keyword or (genre == favorite_genre and energy > chill_max_energy):
         return "Hype"
     if energy <= chill_max_energy and is_chill_keyword:
         return "Chill"
@@ -116,12 +116,12 @@ def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
     chill = playlists.get("Chill", [])
     mixed = playlists.get("Mixed", [])
 
-    total = len(hype)
+    total = len(all_songs)
     hype_ratio = len(hype) / total if total > 0 else 0.0
 
     avg_energy = 0.0
     if all_songs:
-        total_energy = sum(song.get("energy", 0) for song in hype)
+        total_energy = sum(song.get("energy", 0) for song in all_songs)
         avg_energy = total_energy / len(all_songs)
 
     top_artist, top_count = most_common_artist(all_songs)
@@ -168,7 +168,7 @@ def search_songs(
 
     for song in songs:
         value = str(song.get(field, "")).lower()
-        if value and value in q:
+        if value and q in value:
             filtered.append(song)
 
     return filtered
@@ -202,7 +202,7 @@ def history_summary(history: List[Song]) -> Dict[str, int]:
     for song in history:
         mood = song.get("mood", "Mixed")
         if mood not in counts:
-            counts["Mixed"] += 1
-        else:
             counts[mood] += 1
+        else:
+            counts["Mixed"] += 1
     return counts
